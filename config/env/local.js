@@ -10,13 +10,12 @@ module.exports = {
     db: {
         uri: 'mongodb://meds:meds@ds153715.mlab.com:53715/meds',
         options: {
-            user: 'meds',
+            user: '',
             pass: ''
         }
     },
     google: {
         clientID: process.env.GOOGLE_ID || '619369132177-naovs16pij0lirklvbc06gi8fbgeb4lu.apps.googleusercontent.com',
-        clientSecret: process.env.GOOGLE_SECRET || 'DaYOKza68Rl52i20YEAflLqr',
-        callbackURL: 'https://nirmal-solanki.herokuapp.com/api/auth/google/callback'
+        clientSecret: process.env.GOOGLE_SECRET || 'DaYOKza68Rl52i20YEAflLqr'
     }
 };
