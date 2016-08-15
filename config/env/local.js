@@ -16,6 +16,7 @@ module.exports = {
     },
     google: {
         clientID: process.env.GOOGLE_ID || '619369132177-naovs16pij0lirklvbc06gi8fbgeb4lu.apps.googleusercontent.com',
-        clientSecret: process.env.GOOGLE_SECRET || 'DaYOKza68Rl52i20YEAflLqr'
+        clientSecret: process.env.GOOGLE_SECRET || 'DaYOKza68Rl52i20YEAflLqr',
+        callbackURL: 'https://nirmal-solanki.herokuapp.com/'
     }
 };
