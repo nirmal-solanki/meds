@@ -81,14 +81,15 @@ angular.element(document).ready(function () {
 'use strict';
 
 // Use Applicaion configuration module to register a new module
-ApplicationConfiguration.registerModule('articles');
-
-'use strict';
-
-// Use Applicaion configuration module to register a new module
 ApplicationConfiguration.registerModule('core');
 ApplicationConfiguration.registerModule('core.admin', ['core']);
 ApplicationConfiguration.registerModule('core.admin.routes', ['ui.router']);
+
+(function (app) {
+  'use strict';
+
+  app.registerModule('medicines');
+})(ApplicationConfiguration);
 
 'use strict';
 
@@ -96,150 +97,6 @@ ApplicationConfiguration.registerModule('core.admin.routes', ['ui.router']);
 ApplicationConfiguration.registerModule('users', ['core']);
 ApplicationConfiguration.registerModule('users.admin', ['core.admin']);
 ApplicationConfiguration.registerModule('users.admin.routes', ['core.admin.routes']);
-
-'use strict';
-
-// Configuring the Articles module
-angular.module('articles').run(['Menus',
-  function (Menus) {
-    // Add the articles dropdown item
-    Menus.addMenuItem('topbar', {
-      title: 'Articles',
-      state: 'articles',
-      type: 'dropdown'
-    });
-
-    // Add the dropdown list item
-    Menus.addSubMenuItem('topbar', 'articles', {
-      title: 'List Articles',
-      state: 'articles.list'
-    });
-
-    // Add the dropdown create item
-    Menus.addSubMenuItem('topbar', 'articles', {
-      title: 'Create Articles',
-      state: 'articles.create'
-    });
-  }
-]);
-
-'use strict';
-
-// Setting up route
-angular.module('articles').config(['$stateProvider',
-  function ($stateProvider) {
-    // Articles state routing
-    $stateProvider
-      .state('articles', {
-        abstract: true,
-        url: '/articles',
-        template: '<ui-view/>',
-        data: {
-          roles: ['user', 'admin']
-        }
-      })
-      .state('articles.list', {
-        url: '',
-        templateUrl: 'modules/articles/views/list-articles.client.view.html'
-      })
-      .state('articles.create', {
-        url: '/create',
-        templateUrl: 'modules/articles/views/create-article.client.view.html'
-      })
-      .state('articles.view', {
-        url: '/:articleId',
-        templateUrl: 'modules/articles/views/view-article.client.view.html'
-      })
-      .state('articles.edit', {
-        url: '/:articleId/edit',
-        templateUrl: 'modules/articles/views/edit-article.client.view.html'
-      });
-  }
-]);
-
-'use strict';
-
-// Articles controller
-angular.module('articles').controller('ArticlesController', ['$scope', '$stateParams', '$location', 'Authentication', 'Articles',
-  function ($scope, $stateParams, $location, Authentication, Articles) {
-    $scope.authentication = Authentication;
-
-    // Create new Article
-    $scope.create = function () {
-      // Create new Article object
-      var article = new Articles({
-        title: this.title,
-        content: this.content
-      });
-
-      // Redirect after save
-      article.$save(function (response) {
-        $location.path('articles/' + response._id);
-
-        // Clear form fields
-        $scope.title = '';
-        $scope.content = '';
-      }, function (errorResponse) {
-        $scope.error = errorResponse.data.message;
-      });
-    };
-
-    // Remove existing Article
-    $scope.remove = function (article) {
-      if (article) {
-        article.$remove();
-
-        for (var i in $scope.articles) {
-          if ($scope.articles[i] === article) {
-            $scope.articles.splice(i, 1);
-          }
-        }
-      } else {
-        $scope.article.$remove(function () {
-          $location.path('articles');
-        });
-      }
-    };
-
-    // Update existing Article
-    $scope.update = function () {
-      var article = $scope.article;
-
-      article.$update(function () {
-        $location.path('articles/' + article._id);
-      }, function (errorResponse) {
-        $scope.error = errorResponse.data.message;
-      });
-    };
-
-    // Find a list of Articles
-    $scope.find = function () {
-      $scope.articles = Articles.query();
-    };
-
-    // Find existing Article
-    $scope.findOne = function () {
-      $scope.article = Articles.get({
-        articleId: $stateParams.articleId
-      });
-    };
-  }
-]);
-
-'use strict';
-
-//Articles service used for communicating with the articles REST endpoints
-angular.module('articles').factory('Articles', ['$resource',
-  function ($resource) {
-    return $resource('api/articles/:articleId', {
-      articleId: '@_id'
-    }, {
-      update: {
-        method: 'PUT'
-      }
-    });
-  }
-]);
 
 'use strict';
 
@@ -545,6 +402,210 @@ angular.module('core').service('Socket', ['Authentication', '$state', '$timeout'
     };
   }
 ]);
+
+(function () {
+  'use strict';
+
+  angular
+    .module('medicines')
+    .run(menuConfig);
+
+  menuConfig.$inject = ['Menus'];
+
+  function menuConfig(Menus) {
+    // Set top bar menu items
+    Menus.addMenuItem('topbar', {
+      title: 'Medicines',
+      state: 'medicines',
+      type: 'dropdown',
+      roles: ['*']
+    });
+
+    // Add the dropdown list item
+    Menus.addSubMenuItem('topbar', 'medicines', {
+      title: 'List Medicines',
+      state: 'medicines.list'
+    });
+
+    // Add the dropdown create item
+    Menus.addSubMenuItem('topbar', 'medicines', {
+      title: 'Create Medicine',
+      state: 'medicines.create',
+      roles: ['user']
+    });
+  }
+})();
+
+(function () {
+  'use strict';
+
+  angular
+    .module('medicines')
+    .config(routeConfig);
+
+  routeConfig.$inject = ['$stateProvider'];
+
+  function routeConfig($stateProvider) {
+    $stateProvider
+      .state('medicines', {
+        abstract: true,
+        url: '/medicines',
+        template: '<ui-view/>'
+      })
+      .state('medicines.list', {
+        url: '',
+        templateUrl: 'modules/medicines/views/list-medicines.client.view.html',
+        controller: 'MedicinesListController',
+        controllerAs: 'vm',
+        data: {
+          pageTitle: 'Medicines List'
+        }
+      })
+      .state('medicines.create', {
+        url: '/create',
+        templateUrl: 'modules/medicines/views/form-medicine.client.view.html',
+        controller: 'MedicinesController',
+        controllerAs: 'vm',
+        resolve: {
+          medicineResolve: newMedicine
+        },
+        data: {
+          roles: ['user', 'admin'],
+          pageTitle : 'Medicines Create'
+        }
+      })
+      .state('medicines.edit', {
+        url: '/:medicineId/edit',
+        templateUrl: 'modules/medicines/views/form-medicine.client.view.html',
+        controller: 'MedicinesController',
+        controllerAs: 'vm',
+        resolve: {
+          medicineResolve: getMedicine
+        },
+        data: {
+          roles: ['user', 'admin'],
+          pageTitle: 'Edit Medicine {{ medicineResolve.name }}'
+        }
+      })
+      .state('medicines.view', {
+        url: '/:medicineId',
+        templateUrl: 'modules/medicines/views/view-medicine.client.view.html',
+        controller: 'MedicinesController',
+        controllerAs: 'vm',
+        resolve: {
+          medicineResolve: getMedicine
+        },
+        data:{
+          pageTitle: 'Medicine {{ articleResolve.name }}'
+        }
+      });
+  }
+
+  getMedicine.$inject = ['$stateParams', 'MedicinesService'];
+
+  function getMedicine($stateParams, MedicinesService) {
+    return MedicinesService.get({
+      medicineId: $stateParams.medicineId
+    }).$promise;
+  }
+
+  newMedicine.$inject = ['MedicinesService'];
+
+  function newMedicine(MedicinesService) {
+    return new MedicinesService();
+  }
+})();
+
+(function () {
+  'use strict';
+
+  angular
+    .module('medicines')
+    .controller('MedicinesListController', MedicinesListController);
+
+  MedicinesListController.$inject = ['MedicinesService'];
+
+  function MedicinesListController(MedicinesService) {
+    var vm = this;
+
+    vm.medicines = MedicinesService.query();
+  }
+})();
+
+(function () {
+  'use strict';
+
+  // Medicines controller
+  angular
+    .module('medicines')
+    .controller('MedicinesController', MedicinesController);
+
+  MedicinesController.$inject = ['$scope', '$state', 'Authentication', 'medicineResolve'];
+
+  function MedicinesController ($scope, $state, Authentication, medicine) {
+    var vm = this;
+
+    vm.authentication = Authentication;
+    vm.medicine = medicine;
+    vm.error = null;
+    vm.form = {};
+    vm.remove = remove;
+    vm.save = save;
+
+    // Remove existing Medicine
+    function remove() {
+      if (confirm('Are you sure you want to delete?')) {
+        vm.medicine.$remove($state.go('medicines.list'));
+      }
+    }
+
+    // Save Medicine
+    function save(isValid) {
+      if (!isValid) {
+        $scope.$broadcast('show-errors-check-validity', 'vm.form.medicineForm');
+        return false;
+      }
+
+      // TODO: move create/update logic to service
+      if (vm.medicine._id) {
+        vm.medicine.$update(successCallback, errorCallback);
+      } else {
+        vm.medicine.$save(successCallback, errorCallback);
+      }
+
+      function successCallback(res) {
+        $state.go('medicines.view', {
+          medicineId: res._id
+        });
+      }
+
+      function errorCallback(res) {
+        vm.error = res.data.message;
+      }
+    }
+  }
+})();
+
+//Medicines service used to communicate Medicines REST endpoints
+(function () {
+  'use strict';
+
+  angular
+    .module('medicines')
+    .factory('MedicinesService', MedicinesService);
+
+  MedicinesService.$inject = ['$resource'];
+
+  function MedicinesService($resource) {
+    return $resource('api/medicines/:medicineId', {
+      medicineId: '@_id'
+    }, {
+      update: {
+        method: 'PUT'
+      }
+    });
+  }
+})();
 
 'use strict';
 
